@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+{% block title %}{{ site.name }} - Products{% endblock %}
+{% block content %}
+<h1>{{ site.name | upper }}</h1>
+{% for p in products | sort("name") %}
+  <li class="{{ loop.index % 2 == 0 and 'even' or 'odd' }}">{{ p.name }} - ${{ p.price | round(2) }}{% if p.stock == 0 %} (sold out){% endif %}</li>
+{% else %}
+  <p>No products.</p>
+{% endfor %}
+{% endblock %}

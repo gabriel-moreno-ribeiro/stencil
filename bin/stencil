@@ -1,0 +1,23 @@
+#!/usr/bin/env perl
+# Render a template file with variables from a JSON file.
+#   stencil [-p templates_dir] [-e] template.html [vars.json]
+use strict;
+use warnings;
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use Stencil;
+use JSON::PP;
+use Getopt::Long;
+
+my ($path, $escape) = ('.', 0);
+GetOptions('path|p=s' => \$path, 'escape|e' => \$escape) or die "usage: stencil [-p dir] [-e] template [vars.json]\n";
+my ($tpl, $json) = @ARGV;
+die "usage: stencil [-p dir] [-e] template [vars.json]\n" unless $tpl;
+my $vars = {};
+if ($json) {
+    open my $fh, '<', $json or die "cannot read $json: $!\n";
+    local $/;
+    $vars = JSON::PP->new->decode(<$fh>);
+}
+binmode STDOUT, ':encoding(UTF-8)';
+print Stencil->new(path => $path, autoescape => $escape)->render_file($tpl, $vars);

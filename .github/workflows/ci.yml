@@ -1,0 +1,10 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: perl -v | head -2
+      - run: prove -l -v t
+      - run: perl bin/stencil -p examples -e page.html examples/vars.json
