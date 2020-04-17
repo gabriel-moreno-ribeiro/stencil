@@ -1,76 +1,39 @@
 # Stencil
 
-A Jinja-style template engine written from scratch in Perl. Zero dependencies
-outside the Perl core.
-
-I wrote this to learn how template engines actually work: a lexer that splits
-text from tags, a recursive-descent parser that builds an AST, an expression
-parser with operator precedence and filters, and a renderer with scoped
-variables, includes and template inheritance.
-
-## Syntax
+Um motor de templates estilo Jinja, em Perl. Sim, Perl. Eu quis aprender a linguagem que segurou a web nos anos 90 e não achei projeto melhor do que um template engine: tem lexer, parser recursivo, precedência de operadores, escopo de variáveis, herança de template... é um mini compilador que cabe num arquivo.
 
 ```jinja
-{{ user.name | upper }}                {# expressions with filters #}
-{{ items[0].price | round(2) }}        {# attribute and index access #}
+{{ user.name | upper }}
+{{ items[0].price | round(2) }}
 {% if a > 1 and not b %}...{% elif c %}...{% else %}...{% endif %}
 {% for item in items | sort("name") %}
   {{ loop.index }}. {{ item.name }}{% if not loop.last %},{% endif %}
 {% else %}
   no items
 {% endfor %}
-{% for key, value in hash %}{{ key }}={{ value }}{% endfor %}
 {% set total = price * qty %}
 {% include "partial.html" %}
 {% extends "layout.html" %}  {% block content %}...{% endblock %}
-{% raw %}{{ not parsed }}{% endraw %}
 {{- trims whitespace on the left -}}
 ```
 
-Operators: `+ - * / %`, `== != < > <= >=`, `and or not`, `in`, `not in`,
-parentheses, list literals `[1, 2]`, string/number/`true`/`false`/`none` literals.
-
-Built-in filters: `upper lower capitalize title trim length join split reverse
-sort first last default escape e safe replace truncate round abs keys values
-sum min max json`. Add your own with `add_filter`.
-
-## Usage
+Operadores: `+ - * / %`, comparação, `and or not`, `in`, parênteses, listas `[1, 2]`, literais de string/número/`true`/`false`/`none`. Filtros embutidos: `upper lower capitalize title trim length join split reverse sort first last default escape safe replace truncate round abs keys values sum min max json`, e `add_filter` pra criar o seu.
 
 ```perl
 use Stencil;
-
 my $t = Stencil->new(path => 'templates', autoescape => 1);
 print $t->render_string('Hello {{ name | upper }}!', { name => 'world' });
-print $t->render_file('page.html', { products => \@products });
-
 $t->add_filter(money => sub { sprintf '$%.2f', shift });
 ```
 
-Command line:
+Ou pela linha de comando: `perl bin/stencil -p examples -e page.html examples/vars.json`.
 
-```sh
-perl bin/stencil -p examples -e page.html examples/vars.json
-```
+Por dentro é o caminho clássico: uma passada de regex separa texto de tags, o parser monta a AST (`if`/`for`/`set`/`include`/`block`), o parser de expressões usa precedence climbing (então `a + b * c | upper` faz o que você espera), e o renderer anda na AST com uma pilha de escopos, resolvendo a cadeia de `extends` pra que blocos do filho sobrescrevam os do pai. Templates parseados ficam em cache por instância.
 
-## Tests
+O que me surpreendeu no Perl: o quanto regex de verdade (com named captures e `/x`) deixa um lexer curto. O que não me surpreendeu: `$self->{_scopes}[-1]{$name}`.
 
-```sh
-prove -l t
-```
+Testes: `prove -l t`.
 
-## How it works
+---
 
-1. **Lexer** (`_tokenize`): one regex pass over the source producing `text`,
-   `var` and `block` tokens, then applies `-` whitespace control.
-2. **Parser** (`_parse_nodes`, `_parse_block`): consumes tokens recursively,
-   returning nested AST nodes for `if`/`for`/`set`/`include`/`block`.
-3. **Expression parser** (`_p_*`): precedence climbing from `|` filters down
-   to atoms, so `a + b * c | upper` parses the way you expect.
-4. **Renderer** (`_render_nodes`, `_eval`): walks the AST with a stack of
-   variable scopes, resolves the `extends` chain so child blocks override
-   parent blocks, and escapes output when `autoescape` is on. Parsed
-   templates are cached per engine instance.
-
-## License
-
-MIT
+**EN:** a Jinja-style template engine in core Perl (zero CPAN dependencies). One regex pass tokenizes, a recursive-descent parser builds the AST, a precedence-climbing expression parser handles filters and operators, and the renderer walks the tree with scoped variables, `include` and `extends`/`block` inheritance, autoescaping and a per-engine template cache. `prove -l t` runs the tests. MIT.
